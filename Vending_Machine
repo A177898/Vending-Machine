@@ -1,0 +1,191 @@
+import sqlite3
+from sqlite3 import Error
+ 
+ 
+def create_connection(db_file):
+    #create a database connection to a SQLite database
+    try:
+        conn = sqlite3.connect(db_file)
+        return conn
+    except Error as e:
+        print(e)
+    return None
+def create_product_table(conn, create_table_sql):
+    # Create product table
+    try:
+        cur = conn.cursor()
+        cur.execute(create_table_sql)
+    except Error as e:
+        print(e)
+    return cur.lastrowid
+def create_product_list(conn, sql, product_update): 
+    # Create a procust list withi the product table
+    cur = conn.cursor()
+    cur.execute(sql, product_update)
+    conn.commit()
+    print("update successful\n")
+
+def select_from_table(conn, select_command):
+    # SQLite select statement execution
+    try:
+      cur = conn.cursor()
+      cur.execute(select_command)
+    except Error as e:
+        print(e)
+    rows = cur.fetchall()
+    return rows
+
+def Product_table_maintaine(row_index_max):
+  product = input("enter product: ")
+  product_cost = input("enter cost of product: ")
+  product_stock = input("enter number of "+product+"'s available: " )
+  sql_create_product_table = """CREATE TABLE IF NOT EXISTS products (
+  prod_index integer PRIMARY KEY AUTOINCREMENT,
+  prod_desc text,
+  prod_price integer,
+  num_of_prod integer
+  );"""
+  conn = create_connection("C:\\Users\A177898\PycharmProjects\Vending_Machine\product_table.db")
+  if  conn is not None:
+      create_product_table(conn, sql_create_product_table)
+      try:
+        row_update = row_index_max + 1
+      except Exception as e:
+        row_update = 0
+      product_update = (int(row_update), product, int(product_cost), int(product_stock))
+      sql = ''' INSERT INTO products (prod_index, prod_desc, prod_price, num_of_prod)
+                VALUES(?,?,?,?)'''
+      create_product_list(conn, sql, product_update)
+      conn = create_connection("C:\\Users\A177898\PycharmProjects\Vending_Machine\product_table.db")
+      if  conn is not None:
+        select_command = "SELECT * FROM products"
+        rows = select_from_table(conn, select_command)
+        for row in rows:
+          print(row[0], row[1], "R", row[2])
+def coin_table_maintaine():
+    coin_input = int(input("enter coin you would like to update: R"))
+    conn = create_connection("C:\\Users\A177898\PycharmProjects\Vending_Machine\coin_table.db")
+    if  conn is not None:
+        select_command = "SELECT * FROM coins WHERE coin_value =" + str(coin_input)
+        Crows = select_from_table(conn, select_command)
+        for Crow in Crows:
+          pass
+        sql = ''' UPDATE  coins
+                  SET num_of_coins = ?
+                  WHERE coin_value = ?'''
+        coin_amt = int(input("Enter number of coins you would like to add to exsisting coins: R"))
+        coin_update = (int(Crow[1]+coin_amt), coin_input)
+        create_product_list(conn, sql, coin_update)
+        conn.close()
+def display_products():
+   conn = create_connection("C:\\Users\A177898\PycharmProjects\Vending_Machine\product_table.db")
+   # connect to the database
+   if  conn is not None:
+       select_command = "SELECT * FROM products"
+       #select products to be displayed
+       rows = select_from_table(conn, select_command)
+       print("************************")
+       print("*     product menu     *")
+       print("************************")
+       for row in rows:
+         print("* ",row[0],".", row[1], "   R", row[2])
+         conn.close()
+       row_index_max = row[0]
+       print("*  11.  refresh coins")
+       print("*  12.  refresh products")
+       print("*  13.  admin tasks")
+       print("*  14.  exit \n")
+       return row_index_max
+
+def display_coins():
+   conn = create_connection("C:\\Users\A177898\PycharmProjects\Vending_Machine\coin_table.db")
+   # connect to the database
+   if  conn is not None:
+       select_command = "SELECT * FROM coins"
+       #select coins to be displayed
+       Crows = select_from_table(conn, select_command)
+       print("************************")
+       print("*       coin menu      *")
+       print("************************")
+       for Crow in Crows:
+         print("* R",Crow[0],"  ",Crow[1])
+         conn.close()
+
+def main():
+  # variable declarations
+    Transaction_complete = "No"
+    coin_valid = [1, 2, 5, 10]
+
+  # main section of code
+    while (Transaction_complete != "TC"):
+      row_index_max =  display_products()
+      display_coins()
+      row_sub = 3
+      usr_input_amt = 0
+      usr_input = input("Enter your selection: ");
+      if  usr_input == "14":
+          #exit program function
+          Transaction_complete = "TC" 
+          break;  
+      if  usr_input == "13":
+          #ADMIN - update product and coin tables
+          usr_input = input(" * 1.  add product \n * 2.  update coins: \nEnter your selection: ");
+          if  usr_input == "1":
+              #code to create and maintane the product table
+              Product_table_maintaine(row_index_max)
+          elif  usr_input == "2":
+              coin_table_maintaine()
+          else:
+                print("invalid selection")
+      elif usr_input == "":
+           print("invalid entry, Please enter a valid value that corresponds to the product number")
+      elif int(usr_input) > row_index_max:
+           print("invalid entry, Please enter a valid value that corresponds to the product number")
+           conn = create_connection("C:\\Users\A177898\PycharmProjects\Vending_Machine\product_table.db")
+      else:
+        coin_returned = 0
+        conn = create_connection("C:\\Users\A177898\PycharmProjects\Vending_Machine\product_table.db")
+        if  conn is not None:
+            select_command = "SELECT * FROM products where prod_index = " + usr_input
+            rows = select_from_table(conn, select_command)
+            conn.close()
+            for row in rows:
+              pass
+            while (int(usr_input_amt) < row[2]):
+              change_sub = coin_returned
+              usr_input_coin = input("enter your coins")
+              if int(usr_input_coin) in coin_valid:
+                 usr_input_amt = usr_input_amt + int(usr_input_coin)
+                 print(usr_input_amt)
+                 print("valid coin")
+              else:
+                 print("R", usr_input_coin, "invalid")
+            usr_change = (usr_input_amt - row[2])
+            if usr_change == 0:
+               pass
+            else:
+              while (usr_change != coin_returned):
+                coin_returned = usr_change // coin_valid[row_sub]
+                if  coin_returned == 0:
+                    pass
+                else:
+                    print("coins returned: ",coin_returned,"X R",coin_valid[row_sub])
+                    coin_returned = coin_returned * coin_valid[row_sub]
+                    if  coin_returned == usr_change:
+                        pass
+                    else:
+                        usr_change = usr_change - coin_returned
+                    print("coins returned: R",coin_returned)
+                    print("total change:   R",usr_change)
+                row_sub = row_sub - 1
+            conn = create_connection("C:\\Users\A177898\PycharmProjects\Vending_Machine\product_table.db")
+            if  conn is not None:
+                sql = ''' UPDATE  products
+                          SET num_of_prod = ?
+                          WHERE prod_index = ?'''
+                product_update = ((row[3] - 1),row[0])
+                create_product_list(conn, sql, product_update)
+            print(usr_change)
+      conn.close()
+if __name__ == '__main__':
+    main()
